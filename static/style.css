@@ -1,0 +1,243 @@
+:root {
+  --black: #111;
+  --gray-900: #1a1a1a;
+  --gray-600: #666;
+  --gray-400: #999;
+  --gray-200: #ddd;
+  --gray-100: #eee;
+  --white: #fff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--white);
+  color: var(--black);
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  padding: 48px 24px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 8px 0 0;
+  color: var(--gray-600);
+  font-size: 14px;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.search-row {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--black);
+}
+
+#word-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px 18px;
+  font-size: 18px;
+  font-family: inherit;
+  color: var(--black);
+  background: var(--white);
+}
+
+.search-row button {
+  border: none;
+  border-left: 1px solid var(--black);
+  background: var(--black);
+  color: var(--white);
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+
+.search-row button:hover { background: var(--gray-900); }
+
+.index-status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--gray-400);
+  min-height: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--gray-600);
+  padding: 64px 0;
+}
+
+.empty-state .hint {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 6px;
+}
+
+.player {
+  margin-top: 32px;
+  border: 1px solid var(--black);
+  padding: 32px 28px 20px;
+}
+
+.player-sentence-wrap { min-height: 96px; }
+
+.player-sentence {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.player-sentence mark {
+  background: var(--black);
+  color: var(--white);
+  padding: 0 4px;
+  font-weight: 700;
+}
+
+.player-source {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.player-source a {
+  color: var(--gray-600);
+  font-size: 13px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-source a:hover { color: var(--black); text-decoration: underline; }
+
+.feed-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-400);
+  border: 1px solid var(--gray-200);
+  padding: 2px 8px;
+}
+
+.player-controls {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-controls button {
+  border: 1px solid var(--black);
+  background: var(--white);
+  color: var(--black);
+  padding: 9px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.player-controls button:hover { background: var(--black); color: var(--white); }
+.player-controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background: var(--white);
+  color: var(--black);
+}
+
+.counter {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--gray-400);
+  font-variant-numeric: tabular-nums;
+}
+
+.result-list {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.result-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gray-600);
+  cursor: pointer;
+}
+
+.result-list li:hover { color: var(--black); }
+
+.result-list li.active {
+  color: var(--black);
+  font-weight: 600;
+}
+
+.result-list li b { font-weight: 700; }
+
+footer {
+  border-top: 1px solid var(--gray-100);
+  padding: 18px 24px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+footer button {
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-600);
+  padding: 7px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+footer button:hover { border-color: var(--black); color: var(--black); }
+
+#refresh-msg {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+@media (max-width: 480px) {
+  .player-controls { flex-wrap: wrap; }
+  .counter { margin-left: 0; width: 100%; text-align: right; }
+}

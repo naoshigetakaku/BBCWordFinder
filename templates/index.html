@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BBC Word Finder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>BBC Word Finder</h1>
+    <p class="tagline">Hear a word used, again and again, in real BBC sentences.</p>
+  </header>
+
+  <main>
+    <form id="search-form" class="search-row" autocomplete="off">
+      <input id="word-input" type="text" placeholder="Type a word&hellip; e.g. resilient" spellcheck="false">
+      <button type="submit">Search</button>
+    </form>
+
+    <div id="index-status" class="index-status"></div>
+
+    <section id="empty-state" class="empty-state">
+      <p>Search a word to see it used across current BBC articles.</p>
+    </section>
+
+    <section id="no-results" class="empty-state" hidden>
+      <p>No matches found in the current index.</p>
+      <p class="hint">Try refreshing the index, or try a different word / word form.</p>
+    </section>
+
+    <section id="player" class="player" hidden>
+      <div class="player-sentence-wrap">
+        <blockquote id="player-sentence" class="player-sentence"></blockquote>
+      </div>
+      <div class="player-source">
+        <a id="player-link" href="#" target="_blank" rel="noopener"></a>
+        <span id="player-feed" class="feed-tag"></span>
+      </div>
+      <div class="player-controls">
+        <button id="btn-prev" type="button" aria-label="Previous">&larr;</button>
+        <button id="btn-listen" type="button" aria-label="Listen">&#128266; Listen</button>
+        <button id="btn-next" type="button" aria-label="Next">&rarr;</button>
+        <span id="player-counter" class="counter"></span>
+      </div>
+    </section>
+
+    <ol id="result-list" class="result-list"></ol>
+  </main>
+
+  <footer>
+    <button id="btn-refresh" type="button">Refresh index</button>
+    <span id="refresh-msg"></span>
+  </footer>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
