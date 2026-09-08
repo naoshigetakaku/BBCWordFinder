@@ -104,8 +104,14 @@ def _extract_article_sentences(url: str, session: requests.Session):
     return sentences
 
 
-def build_index(progress_cb=None):
-    """Crawl every feed + article and write cache.json. Returns the built index dict."""
+def build_index(progress_cb=None, output_path=None):
+    """Crawl every feed + article and write the index to disk.
+
+    output_path defaults to CACHE_FILE (cache.json next to this script);
+    pass a different Path to also/instead write the static site's copy
+    (e.g. docs/cache.json for the GitHub Pages build).
+    Returns the built index dict.
+    """
     session = requests.Session()
     seen_urls = set()
     entries = []  # (url, title, feed_title)
@@ -151,9 +157,11 @@ def build_index(progress_cb=None):
         "sentence_count": len(sentences),
         "sentences": sentences,
     }
-    CACHE_FILE.write_text(json.dumps(index, ensure_ascii=False, indent=0))
+    target = Path(output_path) if output_path else CACHE_FILE
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(index, ensure_ascii=False, indent=0))
     if progress_cb:
-        progress_cb(f"Done. Indexed {len(sentences)} sentences from {len(entries)} articles.")
+        progress_cb(f"Done. Indexed {len(sentences)} sentences from {len(entries)} articles -> {target}")
     return index
 
 

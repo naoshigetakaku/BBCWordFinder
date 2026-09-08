@@ -17,14 +17,59 @@
   const voiceSelect = document.getElementById("voice-select");
   const speedSelect = document.getElementById("speed-select");
   const resultList = document.getElementById("result-list");
-  const btnRefresh = document.getElementById("btn-refresh");
-  const refreshMsg = document.getElementById("refresh-msg");
 
   let results = [];
   let currentIndex = 0;
   let currentTokens = [];
   let isSpeaking = false;
   let isPaused = false;
+
+  // ---------- static index (built by GitHub Actions, no backend) ----------
+
+  let INDEX = null;
+  const indexReady = fetch("cache.json", { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      INDEX = data;
+      const built = data.built_at ? new Date(data.built_at).toLocaleString() : "unknown";
+      indexStatus.textContent = `${data.sentence_count} sentences from ${data.article_count} articles · updated ${built}`;
+    })
+    .catch((err) => {
+      indexStatus.textContent = "Could not load the word index (cache.json).";
+    });
+
+  function searchIndex(word) {
+    const escaped = word.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\\b${escaped}(?:s|es|d|ed|ing)?\\b`, "i");
+
+    const matches = [];
+    for (const item of INDEX.sentences) {
+      const m = pattern.exec(item.text);
+      if (m) {
+        matches.push({
+          text: item.text,
+          match_start: m.index,
+          match_end: m.index + m[0].length,
+          article_title: item.article_title,
+          article_url: item.article_url,
+          feed: item.feed,
+        });
+      }
+    }
+
+    matches.sort((a, b) => a.article_url.localeCompare(b.article_url));
+    const seen = new Set();
+    const deduped = [];
+    for (const m of matches) {
+      if (seen.has(m.text)) continue;
+      seen.add(m.text);
+      deduped.push(m);
+    }
+    return deduped.slice(0, 60);
+  }
 
   // ---------- speech synthesis (voice, playback) ----------
 
@@ -252,28 +297,18 @@
 
   async function runSearch(word) {
     stopSpeech();
-    indexStatus.textContent = "";
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(word)}`);
-      const data = await res.json();
-      if (!data.ok) {
-        indexStatus.textContent = data.error || "Search failed.";
-        showState("empty");
-        return;
-      }
-      results = data.results;
-      currentIndex = 0;
-      if (results.length === 0) {
-        showState("none");
-        return;
-      }
-      renderList();
-      renderPlayer();
-      showState("results");
-    } catch (err) {
-      indexStatus.textContent = "Could not reach the server.";
-      showState("empty");
+    await indexReady;
+    if (!INDEX) return;
+
+    results = searchIndex(word);
+    currentIndex = 0;
+    if (results.length === 0) {
+      showState("none");
+      return;
     }
+    renderList();
+    renderPlayer();
+    showState("results");
   }
 
   form.addEventListener("submit", (e) => {
@@ -281,37 +316,4 @@
     const word = input.value.trim();
     if (word) runSearch(word);
   });
-
-  // ---------- index status / refresh ----------
-
-  async function pollStatus() {
-    try {
-      const res = await fetch("/api/status");
-      const data = await res.json();
-      if (data.running) {
-        refreshMsg.textContent = data.message || "Refreshing…";
-        btnRefresh.disabled = true;
-      } else {
-        btnRefresh.disabled = false;
-        if (data.has_index) {
-          const built = data.built_at ? new Date(data.built_at).toLocaleString() : "unknown";
-          refreshMsg.textContent = `${data.sentence_count} sentences from ${data.article_count} articles · built ${built}`;
-        } else {
-          refreshMsg.textContent = "No index yet — click Refresh to build one (takes ~1 min).";
-        }
-      }
-    } catch (err) {
-      refreshMsg.textContent = "";
-    }
-  }
-
-  btnRefresh.addEventListener("click", async () => {
-    btnRefresh.disabled = true;
-    refreshMsg.textContent = "Starting…";
-    await fetch("/api/refresh", { method: "POST" });
-    pollStatus();
-  });
-
-  pollStatus();
-  setInterval(pollStatus, 4000);
 })();
