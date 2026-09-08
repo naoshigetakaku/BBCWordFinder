@@ -1,0 +1,14 @@
+{
+  "name": "BBC Word Finder",
+  "short_name": "Word Finder",
+  "description": "Hear a word used, again and again, in real BBC sentences.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
