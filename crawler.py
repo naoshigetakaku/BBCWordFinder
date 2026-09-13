@@ -6,6 +6,7 @@ This is the indexing step. It is meant to be run manually (or via the
 Flask app's "Refresh index" button) — not on every search — so that
 searching the word list stays instant.
 """
+import calendar
 import json
 import re
 import time
@@ -76,6 +77,15 @@ def _split_sentences(text: str):
     return sentences
 
 
+def _published_iso(entry):
+    # feedparser normalises every feed's date format into published_parsed
+    # (a UTC struct_time), so this works the same across all the feeds above.
+    parsed = entry.get("published_parsed")
+    if not parsed:
+        return None
+    return datetime.fromtimestamp(calendar.timegm(parsed), tz=timezone.utc).isoformat()
+
+
 def _extract_article_sentences(url: str, session: requests.Session):
     try:
         resp = session.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -114,7 +124,7 @@ def build_index(progress_cb=None, output_path=None):
     """
     session = requests.Session()
     seen_urls = set()
-    entries = []  # (url, title, feed_title)
+    entries = []  # (url, title, feed_title, published_iso)
 
     for feed_url in FEEDS:
         parsed = feedparser.parse(feed_url)
@@ -124,23 +134,32 @@ def build_index(progress_cb=None, output_path=None):
             if not link or link in seen_urls:
                 continue
             seen_urls.add(link)
-            entries.append((link, entry.get("title", ""), feed_title))
+            entries.append((link, entry.get("title", ""), feed_title, _published_iso(entry)))
 
     if progress_cb:
         progress_cb(f"Found {len(entries)} articles across {len(FEEDS)} feeds. Fetching...")
 
     sentences = []
+    articles = []  # one row per article that yielded at least one sentence
     done = 0
 
     def worker(item):
-        url, title, feed_title = item
-        return url, title, feed_title, _extract_article_sentences(url, session)
+        url, title, feed_title, published = item
+        return url, title, feed_title, published, _extract_article_sentences(url, session)
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         futures = [pool.submit(worker, item) for item in entries]
         for fut in as_completed(futures):
-            url, title, feed_title, sents = fut.result()
+            url, title, feed_title, published, sents = fut.result()
             done += 1
+            if sents:
+                articles.append({
+                    "url": url,
+                    "title": title,
+                    "feed": feed_title,
+                    "published": published,
+                    "sentence_count": len(sents),
+                })
             for s in sents:
                 sentences.append({
                     "text": s,
@@ -151,10 +170,15 @@ def build_index(progress_cb=None, output_path=None):
             if progress_cb and done % 10 == 0:
                 progress_cb(f"Fetched {done}/{len(entries)} articles...")
 
+    # Newest published first; articles with no usable date (rare) sort last
+    # rather than crowding the top of "today"'s list.
+    articles.sort(key=lambda a: a["published"] or "", reverse=True)
+
     index = {
         "built_at": datetime.now(timezone.utc).isoformat(),
         "article_count": len(entries),
         "sentence_count": len(sentences),
+        "articles": articles,
         "sentences": sentences,
     }
     target = Path(output_path) if output_path else CACHE_FILE

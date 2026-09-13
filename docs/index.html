@@ -31,8 +31,18 @@
 
     <div id="index-status" class="index-status">Loading index&hellip;</div>
 
+    <section id="today-section" class="today-section">
+      <div class="section-heading">
+        <span>Today&rsquo;s Articles</span>
+        <span id="today-count" class="today-count"></span>
+      </div>
+      <p id="today-loading" class="today-empty">Loading&hellip;</p>
+      <p id="today-empty" class="today-empty" hidden>No BBC articles indexed for today yet &mdash; the index refreshes every few hours.</p>
+      <ol id="today-list" class="today-list" hidden></ol>
+    </section>
+
     <section id="empty-state" class="empty-state">
-      <p>Search a word to see it used across recent BBC articles.</p>
+      <p>Search a word, or open one of today&rsquo;s articles above, to see it used across recent BBC articles.</p>
     </section>
 
     <section id="no-results" class="empty-state" hidden>
@@ -82,7 +92,7 @@
       </div>
 
       <aside class="queue-col">
-        <div class="queue-heading">All examples</div>
+        <div class="queue-heading" id="queue-heading">All examples</div>
         <ol id="result-list" class="result-list"></ol>
       </aside>
     </section>

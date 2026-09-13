@@ -67,6 +67,27 @@ def refresh():
     return jsonify({"ok": True, "message": "Refresh started."})
 
 
+@app.route("/api/articles")
+def articles():
+    return jsonify({"ok": True, "articles": _index.get("articles", []) if _index else []})
+
+
+@app.route("/api/article")
+def article_sentences():
+    url = request.args.get("url", "").strip()
+    if not url:
+        return jsonify({"ok": False, "error": "Missing url."}), 400
+    if not _index:
+        return jsonify({"ok": False, "error": "Index not built yet. Click Refresh first."}), 400
+
+    results = [
+        {**item, "match_start": 0, "match_end": 0}
+        for item in _index["sentences"]
+        if item["article_url"] == url
+    ]
+    return jsonify({"ok": True, "results": results})
+
+
 @app.route("/api/search")
 def search():
     word = request.args.get("q", "").strip()

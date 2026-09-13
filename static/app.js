@@ -17,8 +17,13 @@
   const voiceSelect = document.getElementById("voice-select");
   const speedSelect = document.getElementById("speed-select");
   const resultList = document.getElementById("result-list");
+  const queueHeading = document.getElementById("queue-heading");
   const btnRefresh = document.getElementById("btn-refresh");
   const refreshMsg = document.getElementById("refresh-msg");
+  const todayLoading = document.getElementById("today-loading");
+  const todayEmpty = document.getElementById("today-empty");
+  const todayList = document.getElementById("today-list");
+  const todayCount = document.getElementById("today-count");
 
   let results = [];
   let currentIndex = 0;
@@ -267,6 +272,7 @@
         showState("none");
         return;
       }
+      queueHeading.textContent = "All examples";
       renderList();
       renderPlayer();
       showState("results");
@@ -282,13 +288,105 @@
     if (word) runSearch(word);
   });
 
+  // ---------- today's articles ----------
+
+  function isToday(iso) {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.toDateString() === new Date().toDateString();
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function renderTodayList(allArticles) {
+    todayLoading.hidden = true;
+    const todays = (allArticles || []).filter((a) => isToday(a.published));
+
+    todayCount.textContent = todays.length ? String(todays.length) : "";
+    todayList.innerHTML = "";
+
+    if (todays.length === 0) {
+      todayEmpty.hidden = false;
+      todayList.hidden = true;
+      return;
+    }
+
+    todayEmpty.hidden = true;
+    todayList.hidden = false;
+    todays.forEach((a) => {
+      const li = document.createElement("li");
+
+      const title = document.createElement("span");
+      title.className = "today-title";
+      title.textContent = a.title || a.url;
+      li.appendChild(title);
+
+      if (a.feed) {
+        const feedTag = document.createElement("span");
+        feedTag.className = "feed-tag";
+        feedTag.textContent = a.feed;
+        li.appendChild(feedTag);
+      }
+
+      if (a.published) {
+        const time = document.createElement("span");
+        time.className = "today-time";
+        time.textContent = formatTime(a.published);
+        li.appendChild(time);
+      }
+
+      li.addEventListener("click", () => openArticle(a.url));
+      todayList.appendChild(li);
+    });
+  }
+
+  async function openArticle(url) {
+    stopSpeech();
+    indexStatus.textContent = "";
+    try {
+      const res = await fetch(`/api/article?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+      if (!data.ok || data.results.length === 0) {
+        showState("none");
+        return;
+      }
+      results = data.results;
+      currentIndex = 0;
+      queueHeading.textContent = "Full article";
+      renderList();
+      renderPlayer();
+      showState("results");
+    } catch (err) {
+      indexStatus.textContent = "Could not reach the server.";
+      showState("empty");
+    }
+  }
+
+  async function loadTodayArticles() {
+    try {
+      const res = await fetch("/api/articles");
+      const data = await res.json();
+      renderTodayList(data.ok ? data.articles : []);
+    } catch (err) {
+      renderTodayList([]);
+    }
+  }
+
   // ---------- index status / refresh ----------
+
+  let wasRefreshing = false;
 
   async function pollStatus() {
     try {
       const res = await fetch("/api/status");
       const data = await res.json();
       if (data.running) {
+        wasRefreshing = true;
         refreshMsg.textContent = data.message || "Refreshing…";
         btnRefresh.disabled = true;
       } else {
@@ -298,6 +396,10 @@
           refreshMsg.textContent = `${data.sentence_count} sentences from ${data.article_count} articles · built ${built}`;
         } else {
           refreshMsg.textContent = "No index yet — click Refresh to build one (takes ~1 min).";
+        }
+        if (wasRefreshing) {
+          wasRefreshing = false;
+          loadTodayArticles();
         }
       }
     } catch (err) {
@@ -314,4 +416,5 @@
 
   pollStatus();
   setInterval(pollStatus, 4000);
+  loadTodayArticles();
 })();
