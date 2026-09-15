@@ -17,6 +17,11 @@
   const voiceSelect = document.getElementById("voice-select");
   const speedSelect = document.getElementById("speed-select");
   const resultList = document.getElementById("result-list");
+  const queueHeading = document.getElementById("queue-heading");
+  const todayLoading = document.getElementById("today-loading");
+  const todayEmpty = document.getElementById("today-empty");
+  const todayList = document.getElementById("today-list");
+  const todayCount = document.getElementById("today-count");
 
   let results = [];
   let currentIndex = 0;
@@ -36,9 +41,11 @@
       INDEX = data;
       const built = data.built_at ? new Date(data.built_at).toLocaleString() : "unknown";
       indexStatus.textContent = `${data.sentence_count} sentences from ${data.article_count} articles · updated ${built}`;
+      renderTodayList(data.articles || []);
     })
     .catch((err) => {
       indexStatus.textContent = "Could not load the word index (cache.json).";
+      renderTodayList([]);
     });
 
   function searchIndex(word) {
@@ -306,6 +313,7 @@
       showState("none");
       return;
     }
+    queueHeading.textContent = "All examples";
     renderList();
     renderPlayer();
     showState("results");
@@ -316,4 +324,80 @@
     const word = input.value.trim();
     if (word) runSearch(word);
   });
+
+  // ---------- today's articles ----------
+
+  function isToday(iso) {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.toDateString() === new Date().toDateString();
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function renderTodayList(allArticles) {
+    todayLoading.hidden = true;
+    const todays = (allArticles || []).filter((a) => isToday(a.published));
+
+    todayCount.textContent = todays.length ? String(todays.length) : "";
+    todayList.innerHTML = "";
+
+    if (todays.length === 0) {
+      todayEmpty.hidden = false;
+      todayList.hidden = true;
+      return;
+    }
+
+    todayEmpty.hidden = true;
+    todayList.hidden = false;
+    todays.forEach((a) => {
+      const li = document.createElement("li");
+
+      const title = document.createElement("span");
+      title.className = "today-title";
+      title.textContent = a.title || a.url;
+      li.appendChild(title);
+
+      if (a.feed) {
+        const feedTag = document.createElement("span");
+        feedTag.className = "feed-tag";
+        feedTag.textContent = a.feed;
+        li.appendChild(feedTag);
+      }
+
+      if (a.published) {
+        const time = document.createElement("span");
+        time.className = "today-time";
+        time.textContent = formatTime(a.published);
+        li.appendChild(time);
+      }
+
+      li.addEventListener("click", () => openArticle(a.url));
+      todayList.appendChild(li);
+    });
+  }
+
+  async function openArticle(url) {
+    stopSpeech();
+    await indexReady;
+    if (!INDEX) return;
+
+    results = INDEX.sentences
+      .filter((s) => s.article_url === url)
+      .map((s) => ({ ...s, match_start: 0, match_end: 0 }));
+    currentIndex = 0;
+    if (results.length === 0) {
+      showState("none");
+      return;
+    }
+    queueHeading.textContent = "Full article";
+    renderList();
+    renderPlayer();
+    showState("results");
+  }
 })();
